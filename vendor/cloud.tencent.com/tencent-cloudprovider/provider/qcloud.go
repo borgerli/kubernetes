@@ -191,7 +191,6 @@ func newQCloud() (*QCloud, error) {
 	cloud := &QCloud{
 		Config:   &config,
 		metaData: newMetaDataCached(),
-		cache:    &nodeCache{nodeMap: make(map[string]*cachedNode)}, //only hostname type use
 		cvm:      cvmClient,
 		clb:      clbClient,
 		cbs:      cbsClient,
@@ -199,8 +198,6 @@ func newQCloud() (*QCloud, error) {
 		cbsV3:    cbsV3Client,
 		cvmV3:    cvmV3Client,
 	}
-
-	glog.Infof("newQCloud for qcloud cloud provider (%p)", cloud)
 
 	return cloud, nil
 }
