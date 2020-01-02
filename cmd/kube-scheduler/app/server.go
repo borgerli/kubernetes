@@ -309,6 +309,7 @@ func newMetricsHandler(config *kubeschedulerconfig.KubeSchedulerConfiguration) h
 func newHealthzHandler(config *kubeschedulerconfig.KubeSchedulerConfiguration, separateMetrics bool, checks ...healthz.HealthChecker) http.Handler {
 	pathRecorderMux := mux.NewPathRecorderMux("kube-scheduler")
 	healthz.InstallHandler(pathRecorderMux, checks...)
+	pathRecorderMux.UnlistedHandle("/debug/flags/v", routes.StringFlagPutHandler(logs.GlogSetter))
 	if !separateMetrics {
 		installMetricHandler(pathRecorderMux)
 	}
