@@ -52,6 +52,10 @@ import (
 
 	// Cloud providers
 	_ "k8s.io/kubernetes/pkg/cloudprovider/providers"
+	// features check
+
+	cbs "k8s.io/kubernetes/pkg/volume/cbs"
+	cbs_dirty "k8s.io/kubernetes/pkg/volume/cbs_dirty"
 )
 
 // ProbeVolumePlugins collects all volume plugins into an easy to use list.
@@ -88,6 +92,8 @@ func ProbeVolumePlugins(featureGate featuregate.FeatureGate) ([]volume.VolumePlu
 	allPlugins = append(allPlugins, scaleio.ProbeVolumePlugins()...)
 	allPlugins = append(allPlugins, local.ProbeVolumePlugins()...)
 	allPlugins = append(allPlugins, storageos.ProbeVolumePlugins()...)
+	allPlugins = append(allPlugins, cbs.ProbeVolumePlugins()...)
+	allPlugins = append(allPlugins, cbs_dirty.ProbeVolumePlugins()...)
 	allPlugins = append(allPlugins, csi.ProbeVolumePlugins()...)
 	return allPlugins, nil
 }

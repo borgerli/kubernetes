@@ -2,10 +2,11 @@ package qcloud
 
 import (
 	"fmt"
-	"github.com/dbdd4us/qcloudapi-sdk-go/clb"
-	"k8s.io/api/core/v1"
 	"reflect"
 	"time"
+
+	"github.com/dbdd4us/qcloudapi-sdk-go/clb"
+	v1 "k8s.io/api/core/v1"
 )
 
 func RetryDo(op func() (interface{}, error), checker func(interface{}, error) bool, timeout uint64, interval uint64) (ret interface{}, err error, isTimeout bool) {
@@ -137,6 +138,15 @@ func HasElem(s interface{}, elem interface{}) bool {
 func stringIn(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+func stringInV3(a string, list []*string) bool {
+	for _, b := range list {
+		if *b == a {
 			return true
 		}
 	}

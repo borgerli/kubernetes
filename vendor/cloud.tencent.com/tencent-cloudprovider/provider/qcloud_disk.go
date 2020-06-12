@@ -19,7 +19,7 @@ package qcloud
 import (
 	"fmt"
 	"github.com/dbdd4us/qcloudapi-sdk-go/cbs"
-	glog "k8s.io/klog"
+	"k8s.io/klog"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -52,7 +52,7 @@ type Disks interface {
 
 func (qcloud *QCloud) CreateDisk(diskType string, sizeGb int, zone string) (string, int, error) {
 
-	glog.Infof("CreateDisk, diskType:%s, size:%d, zone:%d",
+	klog.Infof("CreateDisk, diskType:%s, size:%d, zone:%d",
 		diskType, sizeGb, zone)
 
 	var createType string
@@ -130,12 +130,12 @@ func (qcloud *QCloud) GetDiskInfo(diskId string) (*cbs.StorageSet, error) {
 		StorageIds: &[]string{diskId},
 	})
 	if err != nil {
-		glog.Errorf("DescribeCbsStorage failed,diskId:%s,error:%v", diskId, err)
+		klog.Errorf("DescribeCbsStorage failed,diskId:%s,error:%v", diskId, err)
 		return nil, err
 	}
 	if len(rsp.StorageSet) > 1 {
 		msg := fmt.Sprintf("DescribeCbsStorage failed,diskId:%s,count:%d > 1", diskId, len(rsp.StorageSet))
-		glog.Error(msg)
+		klog.Error(msg)
 		return nil, fmt.Errorf(msg)
 	}
 	if len(rsp.StorageSet) == 0 {
@@ -156,7 +156,7 @@ func (qcloud *QCloud) AttachDisk(diskId string, nodename types.NodeName) error {
 
 	nodeName := string(nodename)
 
-	glog.Infof("AttachDisk, diskId:%s, node:%s", diskId, nodeName)
+	klog.Infof("AttachDisk, diskId:%s, node:%s", diskId, nodeName)
 
 	info, err := qcloud.getInstanceInfoByNodeName(nodeName)
 	if err != nil || info == nil {
@@ -170,7 +170,7 @@ func (qcloud *QCloud) AttachDisk(diskId string, nodename types.NodeName) error {
 
 	_, err = qcloud.cbs.ModifyCbsRenewFlag([]string{diskId}, cbs.RenewFlagAutoRenew)
 	if err != nil {
-		glog.Errorf("ModifyCbsRenewFlag failed, disk:%s, error:%v", diskId, err)
+		klog.Errorf("ModifyCbsRenewFlag failed, disk:%s, error:%v", diskId, err)
 	}
 
 	return nil
@@ -179,13 +179,13 @@ func (qcloud *QCloud) AttachDisk(diskId string, nodename types.NodeName) error {
 func (qcloud *QCloud) DiskIsAttached(diskId string, nodename types.NodeName) (bool, error) {
 	nodeName := string(nodename)
 
-	glog.Infof("DiskIsAttached, diskId:%s, nodeName:%s", diskId, nodeName)
+	klog.Infof("DiskIsAttached, diskId:%s, nodeName:%s", diskId, nodeName)
 
 	instanceInfo, err := qcloud.getInstanceInfoByNodeName(nodeName)
 	if err != nil {
 		if err == QcloudInstanceNotFound {
 			// If instance no longer exists, safe to assume volume is not attached.
-			glog.Warningf(
+			klog.Warningf(
 				"Instance %q does not exist. DiskIsAttached will assume disk %q is not attached to it.",
 				nodeName,
 				diskId)
@@ -212,7 +212,7 @@ func (qcloud *QCloud) DisksAreAttached(diskIds []string, nodename types.NodeName
 	instanceInfo, err := qcloud.getInstanceInfoByNodeName(nodeName)
 	if err != nil {
 		if err == QcloudInstanceNotFound {
-			glog.Warningf("DiskAreAttached, node is not found, assume disks are not attched to the node:%s",
+			klog.Warningf("DiskAreAttached, node is not found, assume disks are not attched to the node:%s",
 				nodeName)
 			return attached, nil
 		}
@@ -234,7 +234,7 @@ func (qcloud *QCloud) DisksAreAttached(diskIds []string, nodename types.NodeName
 func (qcloud *QCloud) DetachDisk(diskId string, nodename types.NodeName) error {
 	nodeName := string(nodename)
 
-	glog.Infof("DetachDisk, disk:%s, instance:%s", diskId, nodeName)
+	klog.Infof("DetachDisk, disk:%s, instance:%s", diskId, nodeName)
 	err := qcloud.cbs.DetachCbsStorageTask(diskId)
 	if err != nil {
 		return fmt.Errorf("DetachCbsStorage failed, disk:%s, error:%s", diskId, err)

@@ -1364,6 +1364,7 @@ var map_PersistentVolumeSource = map[string]string{
 	"local":                "Local represents directly-attached storage with node affinity",
 	"storageos":            "StorageOS represents a StorageOS volume that is attached to the kubelet's host machine and mounted into the pod More info: https://examples.k8s.io/volumes/storageos/README.md",
 	"csi":                  "CSI represents storage that is handled by an external CSI driver (Beta feature).",
+	"qcloudCbs":            "CloudCbs represents a qcloud cbs data disk mount on the host and bind mount to the pod",
 }
 
 func (PersistentVolumeSource) SwaggerDoc() map[string]string {
@@ -2430,6 +2431,7 @@ var map_VolumeSource = map[string]string{
 	"portworxVolume":        "PortworxVolume represents a portworx volume attached and mounted on kubelets host machine",
 	"scaleIO":               "ScaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.",
 	"storageos":             "StorageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.",
+	"qcloudCbs":             "QcloudCbs represents a qcloud cbs data disk mount on the host and bind mount to the pod",
 	"csi":                   "CSI (Container Storage Interface) represents storage that is handled by an external CSI driver (Alpha feature).",
 }
 
