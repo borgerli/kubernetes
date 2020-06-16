@@ -42,10 +42,14 @@ var ecrPattern = regexp.MustCompile(`^(\d{12})\.dkr\.ecr(\-fips)?\.([a-zA-Z0-9][
 
 // init registers a credential provider for each registryURLTemplate and creates
 // an ECR token getter factory with a new cache to store token getters
+// comment out init() function and do not register aws credential provider, to avoid
+// issue #92162: https://github.com/kubernetes/kubernetes/issues/92162
+/*
 func init() {
-	credentialprovider.RegisterCredentialProvider("amazon-ecr",
-		newECRProvider(&ecrTokenGetterFactory{cache: make(map[string]tokenGetter)}))
+        credentialprovider.RegisterCredentialProvider("amazon-ecr",
+                newECRProvider(&ecrTokenGetterFactory{cache: make(map[string]tokenGetter)}))
 }
+*/
 
 // ecrProvider is a DockerConfigProvider that gets and refreshes tokens
 // from AWS to access ECR.
