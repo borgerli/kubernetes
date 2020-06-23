@@ -52,6 +52,11 @@ const (
 
 	// ResourceNameLengthLimit stores maximum allowed Length for a ResourceName
 	ResourceNameLengthLimit = 63
+
+	// QcloudCbsVolumeLimitKey stores resource name that will store volume limits for QcloudCbs
+	QcloudCbsVolumeLimitKey = "attachable-volumes-qcloud-cbs"
+	// DefaultMaxQcloudCbsVolumes is defines the maximum number of PD Volumes for Qcloud Cbs
+	DefaultMaxQcloudCbsVolumes = 18
 )
 
 // GetCSIAttachLimitKey returns limit key used for CSI volumes

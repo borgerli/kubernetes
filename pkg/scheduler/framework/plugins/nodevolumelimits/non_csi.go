@@ -57,6 +57,8 @@ const (
 	azureDiskVolumeFilterType = "AzureDisk"
 	// cinderVolumeFilterType defines the filter name for cinderVolumeFilter.
 	cinderVolumeFilterType = "Cinder"
+	// qcloudCbsVolumeFilterType defines the filter name for qcloudCbsVolumeFilter.
+	qcloudCbsVolumeFilterType = "CBS"
 
 	// ErrReasonMaxVolumeCountExceeded is used for MaxVolumeCount predicate error.
 	ErrReasonMaxVolumeCountExceeded = "node(s) exceed max volume count"
@@ -99,6 +101,15 @@ const GCEPDName = "GCEPDLimits"
 func NewGCEPD(_ *runtime.Unknown, handle framework.FrameworkHandle) (framework.Plugin, error) {
 	informerFactory := handle.SharedInformerFactory()
 	return newNonCSILimitsWithInformerFactory(gcePDVolumeFilterType, informerFactory), nil
+}
+
+// EBSName is the name of the plugin used in the plugin registry and configurations.
+const QcloudCBSName = "CBSLimits"
+
+// NewQcloudCBS returns function that initializes a new plugin and returns it.
+func NewQcloudCBS(_ *runtime.Unknown, handle framework.FrameworkHandle) (framework.Plugin, error) {
+	informerFactory := handle.SharedInformerFactory()
+	return newNonCSILimitsWithInformerFactory(qcloudCbsVolumeFilterType, informerFactory), nil
 }
 
 // nonCSILimits contains information to check the max number of volumes for a plugin.
@@ -170,6 +181,10 @@ func newNonCSILimits(
 		name = CinderName
 		filter = cinderVolumeFilter
 		volumeLimitKey = v1.ResourceName(volumeutil.CinderVolumeLimitKey)
+	case qcloudCbsVolumeFilterType:
+		name = QcloudCBSName
+		filter = qcloudCBSVolumeFilter
+		volumeLimitKey = v1.ResourceName(volumeutil.QcloudCbsVolumeLimitKey)
 	default:
 		klog.Fatalf("Wrong filterName, Only Support %v %v %v %v", ebsVolumeFilterType,
 			gcePDVolumeFilterType, azureDiskVolumeFilterType, cinderVolumeFilterType)
@@ -480,6 +495,35 @@ var cinderVolumeFilter = VolumeFilter{
 	},
 }
 
+// qcloudCBSVolumeFilter is a VolumeFilter for filtering AWS ElasticBlockStore Volumes.
+var qcloudCBSVolumeFilter = VolumeFilter{
+	FilterVolume: func(vol *v1.Volume) (string, bool) {
+		if vol.QcloudCbs != nil {
+			return vol.QcloudCbs.CbsDiskId, true
+		}
+		return "", false
+	},
+
+	FilterPersistentVolume: func(pv *v1.PersistentVolume) (string, bool) {
+		if pv.Spec.QcloudCbs != nil {
+			return pv.Spec.QcloudCbs.CbsDiskId, true
+		}
+		return "", false
+	},
+
+	MatchProvisioner: func(sc *storage.StorageClass) (relevant bool) {
+		if sc.Provisioner == "cloud.tencent.com/qcloud-cbs" {
+			return true
+		}
+		return false
+	},
+
+	IsMigrated: func(csiNode *storage.CSINode) bool {
+		// return isCSIMigrationOn(csiNode, csilibplugins.CinderInTreePluginName)
+		return false
+	},
+}
+
 func getMaxVolumeFunc(filterName string) func(node *v1.Node) int {
 	return func(node *v1.Node) int {
 		maxVolumesFromEnv := getMaxVolLimitFromEnv()
@@ -503,6 +547,8 @@ func getMaxVolumeFunc(filterName string) func(node *v1.Node) int {
 			return defaultMaxAzureDiskVolumes
 		case cinderVolumeFilterType:
 			return volumeutil.DefaultMaxCinderVolumes
+		case qcloudCbsVolumeFilterType:
+			return volumeutil.DefaultMaxQcloudCbsVolumes
 		default:
 			return -1
 		}
