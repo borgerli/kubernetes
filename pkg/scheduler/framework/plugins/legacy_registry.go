@@ -131,6 +131,9 @@ const (
 	NoVolumeZoneConflictPred = "NoVolumeZoneConflict"
 	// EvenPodsSpreadPred defines the name of predicate EvenPodsSpread.
 	EvenPodsSpreadPred = "EvenPodsSpread"
+
+	// MaxQcloudCbsVolumeCount defines the name of predicate MaxQcloudCbsVolumeCount.
+	MaxQcloudCbsVolumeCount = "MaxQcloudCbsVolumeCount"
 )
 
 // PredicateOrdering returns the ordering of predicate execution.
@@ -139,7 +142,7 @@ func PredicateOrdering() []string {
 		GeneralPred, HostNamePred, PodFitsHostPortsPred,
 		MatchNodeSelectorPred, PodFitsResourcesPred, NoDiskConflictPred,
 		PodToleratesNodeTaintsPred, CheckNodeLabelPresencePred,
-		CheckServiceAffinityPred, MaxEBSVolumeCountPred, MaxGCEPDVolumeCountPred, MaxCSIVolumeCountPred,
+		CheckServiceAffinityPred, MaxEBSVolumeCountPred, MaxGCEPDVolumeCountPred, MaxQcloudCbsVolumeCount, MaxCSIVolumeCountPred,
 		MaxAzureDiskVolumeCountPred, MaxCinderVolumeCountPred, CheckVolumeBindingPred, NoVolumeZoneConflictPred,
 		EvenPodsSpreadPred, MatchInterPodAffinityPred}
 }
@@ -195,6 +198,7 @@ func NewLegacyRegistry() *LegacyRegistry {
 			MaxEBSVolumeCountPred,
 			MaxGCEPDVolumeCountPred,
 			MaxAzureDiskVolumeCountPred,
+			MaxQcloudCbsVolumeCount,
 			MaxCSIVolumeCountPred,
 			MatchInterPodAffinityPred,
 			NoDiskConflictPred,
@@ -307,6 +311,11 @@ func NewLegacyRegistry() *LegacyRegistry {
 	registry.registerPredicateConfigProducer(MaxCinderVolumeCountPred,
 		func(_ ConfigProducerArgs) (plugins config.Plugins, pluginConfig []config.PluginConfig) {
 			plugins.Filter = appendToPluginSet(plugins.Filter, nodevolumelimits.CinderName, nil)
+			return
+		})
+	registry.registerPredicateConfigProducer(MaxQcloudCbsVolumeCount,
+		func(_ ConfigProducerArgs) (plugins config.Plugins, pluginConfig []config.PluginConfig) {
+			plugins.Filter = appendToPluginSet(plugins.Filter, nodevolumelimits.QcloudCBSName, nil)
 			return
 		})
 	registry.registerPredicateConfigProducer(MatchInterPodAffinityPred,

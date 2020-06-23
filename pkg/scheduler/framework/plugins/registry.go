@@ -67,6 +67,7 @@ func NewInTreeRegistry() framework.Registry {
 		nodevolumelimits.GCEPDName:                 nodevolumelimits.NewGCEPD,
 		nodevolumelimits.AzureDiskName:             nodevolumelimits.NewAzureDisk,
 		nodevolumelimits.CinderName:                nodevolumelimits.NewCinder,
+		nodevolumelimits.QcloudCBSName:             nodevolumelimits.NewQcloudCBS,
 		interpodaffinity.Name:                      interpodaffinity.New,
 		nodelabel.Name:                             nodelabel.New,
 		serviceaffinity.Name:                       serviceaffinity.New,
