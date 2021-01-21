@@ -27,6 +27,7 @@ go_library(
         "//staging/src/k8s.io/client-go/restmapper:go_default_library",
         "//staging/src/k8s.io/component-base/config:go_default_library",
         "//staging/src/k8s.io/component-base/configz:go_default_library",
+        "//staging/src/k8s.io/component-base/logs:go_default_library",
         "//staging/src/k8s.io/component-base/metrics/legacyregistry:go_default_library",
         "//staging/src/k8s.io/component-base/metrics/prometheus/workqueue:go_default_library",
         "//staging/src/k8s.io/controller-manager/pkg/clientbuilder:go_default_library",
