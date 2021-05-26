@@ -51,6 +51,8 @@ const (
 	libcontainerSystemd libcontainerCgroupManagerType = "systemd"
 	// systemdSuffix is the cgroup name suffix for systemd
 	systemdSuffix string = ".slice"
+	// MemoryMin is memory.min for cgroup v2
+	MemoryMin string = "memory.min"
 )
 
 var RootCgroupName = CgroupName([]string{})
