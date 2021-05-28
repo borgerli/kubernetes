@@ -20,6 +20,7 @@ package cm
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -131,9 +132,17 @@ func (cm *containerManagerImpl) enforceNodeAllocatableCgroups() error {
 
 // enforceExistingCgroup updates the limits `rl` on existing cgroup `cName` using `cgroupManager` interface.
 func enforceExistingCgroup(cgroupManager CgroupManager, cName CgroupName, rl v1.ResourceList) error {
+	rp := getCgroupConfig(rl)
+	// payall4u: check feature gate
+	if rp.Memory != nil {
+		if rp.Unified == nil {
+			rp.Unified = make(map[string]string)
+		}
+		rp.Unified[MemoryMin] = strconv.FormatInt(*rp.Memory, 10)
+	}
 	cgroupConfig := &CgroupConfig{
 		Name:               cName,
-		ResourceParameters: getCgroupConfig(rl),
+		ResourceParameters: rp,
 	}
 	if cgroupConfig.ResourceParameters == nil {
 		return fmt.Errorf("%q cgroup is not config properly", cgroupConfig.Name)

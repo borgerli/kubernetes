@@ -500,6 +500,13 @@ func (m *cgroupManagerImpl) toResources(resourceConfig *ResourceConfig) *libcont
 			Limit:    uint64(0),
 		})
 	}
+	// only for cgroup v2
+	if resourceConfig.Unified != nil {
+		resources.Unified = make(map[string]string)
+		for k, v := range resources.Unified {
+			resources.Unified[k] = v
+		}
+	}
 	return resources
 }
 
