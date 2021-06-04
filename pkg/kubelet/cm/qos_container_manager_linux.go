@@ -18,6 +18,7 @@ package cm
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -28,7 +29,7 @@ import (
 
 	units "github.com/docker/go-units"
 	cgroupfs "github.com/opencontainers/runc/libcontainer/cgroups/fs"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/kubernetes/pkg/api/v1/resource"
 	v1qos "k8s.io/kubernetes/pkg/apis/core/v1/helper/qos"
@@ -191,10 +192,9 @@ func (m *qosContainerManagerImpl) setCPUCgroupConfig(configs map[v1.PodQOSClass]
 	return nil
 }
 
-// setMemoryReserve sums the memory limits of all pods in a QOS class,
-// calculates QOS class memory limits, and set those limits in the
-// CgroupConfig for each QOS class.
-func (m *qosContainerManagerImpl) setMemoryReserve(configs map[v1.PodQOSClass]*CgroupConfig, percentReserve int64) {
+// getQoSMemoryRequests sums and returns the memory request of all pods for
+// guaranteed and burstable qos classes.
+func (m *qosContainerManagerImpl) getQoSMemoryRequests() map[v1.PodQOSClass]int64 {
 	qosMemoryRequests := map[v1.PodQOSClass]int64{
 		v1.PodQOSGuaranteed: 0,
 		v1.PodQOSBurstable:  0,
@@ -209,12 +209,22 @@ func (m *qosContainerManagerImpl) setMemoryReserve(configs map[v1.PodQOSClass]*C
 			// limits are not set for Best Effort pods
 			continue
 		}
+
 		req, _ := resource.PodRequestsAndLimits(pod)
 		if request, found := req[v1.ResourceMemory]; found {
 			podMemoryRequest += request.Value()
 		}
 		qosMemoryRequests[qosClass] += podMemoryRequest
 	}
+
+	return qosMemoryRequests
+}
+
+// setMemoryReserve sums the memory limits of all pods in a QOS class,
+// calculates QOS class memory limits, and set those limits in the
+// CgroupConfig for each QOS class.
+func (m *qosContainerManagerImpl) setMemoryReserve(configs map[v1.PodQOSClass]*CgroupConfig, percentReserve int64) {
+	qosMemoryRequests := m.getQoSMemoryRequests()
 
 	resources := m.getNodeAllocatable()
 	allocatableResource, ok := resources[v1.ResourceMemory]
@@ -266,11 +276,41 @@ func (m *qosContainerManagerImpl) retrySetMemoryReserve(configs map[v1.PodQOSCla
 	}
 }
 
+// setMemoryQoS sums the memory requests of all pods in the Burstable class,
+// and set the sum memory as the memory.min in the Unified field of CgroupConfig.
+func (m *qosContainerManagerImpl) setMemoryQoS(configs map[v1.PodQOSClass]*CgroupConfig) {
+	qosMemoryRequests := m.getQoSMemoryRequests()
+
+	// Calculate the memory.min:
+	// for burstable(/kubepods/burstable): sum of all burstable pods
+	// for guaranteed(/kubepods): sum of all guaranteed and burstable pods
+	burstableMin := qosMemoryRequests[v1.PodQOSBurstable]
+	guaranteedMin := qosMemoryRequests[v1.PodQOSGuaranteed] + burstableMin
+
+	if burstableMin > 0 {
+		configs[v1.PodQOSBurstable].ResourceParameters.Unified = map[string]string{
+			MemoryMin: strconv.FormatInt(burstableMin, 10),
+		}
+		klog.V(2).InfoS("QoS pod memory min", "qos", v1.PodQOSBurstable, "min", burstableMin)
+	}
+
+	if guaranteedMin > 0 {
+		configs[v1.PodQOSGuaranteed].ResourceParameters.Unified = map[string]string{
+			MemoryMin: strconv.FormatInt(guaranteedMin, 10),
+		}
+		klog.V(2).InfoS("QoS pod memory min", "qos", v1.PodQOSGuaranteed, "min", guaranteedMin)
+	}
+}
+
 func (m *qosContainerManagerImpl) UpdateCgroups() error {
 	m.Lock()
 	defer m.Unlock()
 
 	qosConfigs := map[v1.PodQOSClass]*CgroupConfig{
+		v1.PodQOSGuaranteed: {
+			Name:               m.qosContainersInfo.Guaranteed,
+			ResourceParameters: &ResourceConfig{},
+		},
 		v1.PodQOSBurstable: {
 			Name:               m.qosContainersInfo.Burstable,
 			ResourceParameters: &ResourceConfig{},
@@ -289,6 +329,11 @@ func (m *qosContainerManagerImpl) UpdateCgroups() error {
 	// update the qos level cgroup settings for huge pages (ensure they remain unbounded)
 	if err := m.setHugePagesConfig(qosConfigs); err != nil {
 		return err
+	}
+
+	// update the qos level cgrougs v2 settings of memory qos if feature enabled
+	if utilfeature.DefaultFeatureGate.Enabled(kubefeatures.MemoryQoS) {
+		m.setMemoryQoS(qosConfigs)
 	}
 
 	if utilfeature.DefaultFeatureGate.Enabled(kubefeatures.QOSReserved) {

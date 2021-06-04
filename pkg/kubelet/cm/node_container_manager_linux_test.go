@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	evictionapi "k8s.io/kubernetes/pkg/kubelet/eviction/api"
 )
@@ -250,7 +250,7 @@ func TestNodeAllocatableForEnforcement(t *testing.T) {
 			NodeConfig: nc,
 			capacity:   tc.capacity,
 		}
-		for k, v := range cm.getNodeAllocatableAbsolute() {
+		for k, v := range cm.GetNodeAllocatableAbsolute() {
 			expected, exists := tc.expected[k]
 			assert.True(t, exists)
 			assert.Equal(t, expected.MilliValue(), v.MilliValue(), "test case %d failed for resource %q", idx+1, k)

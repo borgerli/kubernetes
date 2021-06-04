@@ -34,6 +34,11 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/qos"
 )
 
+const (
+	// The Default memory throttling factor for MemroyQoS
+	MemoryThrottlingFactor = 0.8
+)
+
 // applyPlatformSpecificContainerConfig applies platform specific configurations to runtimeapi.ContainerConfig.
 func (m *kubeGenericRuntimeManager) applyPlatformSpecificContainerConfig(config *runtimeapi.ContainerConfig, container *v1.Container, pod *v1.Pod, uid *int64, username string, nsTarget *kubecontainer.ContainerID) error {
 	config.Linux = m.generateLinuxContainerConfig(container, pod, uid, username, nsTarget)
@@ -74,12 +79,6 @@ func (m *kubeGenericRuntimeManager) generateLinuxContainerConfig(container *v1.C
 	if memoryLimit != 0 {
 		lc.Resources.MemoryLimitInBytes = memoryLimit
 	}
-	if memoryRequest != 0 {
-		if lc.Resources.Unified == nil {
-			lc.Resources.Unified = make(map[string]string)
-		}
-		lc.Resources.Unified[cm.MemoryMin] = strconv.FormatInt(memoryRequest, 10)
-	}
 	// Set OOM score of the container based on qos policy. Processes in lower-priority pods should
 	// be killed first if the system runs out of memory.
 	lc.Resources.OomScoreAdj = oomScoreAdj
@@ -97,6 +96,32 @@ func (m *kubeGenericRuntimeManager) generateLinuxContainerConfig(container *v1.C
 	}
 
 	lc.Resources.HugepageLimits = GetHugepageLimitsFromResources(container.Resources)
+
+	// Set memory.min and memory.high if MemoryQoS enabled
+	if utilfeature.DefaultFeatureGate.Enabled(kubefeatures.MemoryQoS) {
+		unified := map[string]string{}
+
+		if memoryRequest != 0 {
+			unified[cm.MemoryMin] = strconv.FormatInt(memoryRequest, 10)
+		}
+
+		memoryHigh := int64(0)
+		if memoryLimit != 0 {
+			memoryHigh = int64(float64(memoryLimit) * MemoryThrottlingFactor)
+		} else {
+			allocatable := m.getNodeAllocatable()
+			allocatableMemory, ok := allocatable[v1.ResourceMemory]
+			if ok && allocatableMemory.Value() > 0 {
+				memoryHigh = int64(float64(allocatableMemory.Value()) * MemoryThrottlingFactor)
+			}
+		}
+		if memoryHigh > memoryRequest {
+			unified[cm.MemoryHigh] = strconv.FormatInt(memoryHigh, 10)
+		}
+		if len(unified) > 0 {
+			lc.Resources.Unified = unified
+		}
+	}
 
 	return lc
 }

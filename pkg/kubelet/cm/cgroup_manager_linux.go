@@ -53,6 +53,8 @@ const (
 	systemdSuffix string = ".slice"
 	// MemoryMin is memory.min for cgroup v2
 	MemoryMin string = "memory.min"
+	// MemoryHigh is memory.high for cgroup v2
+	MemoryHigh string = "memory.high"
 )
 
 var RootCgroupName = CgroupName([]string{})
